@@ -56,13 +56,19 @@ public class Viz {
     }
 
     public void createDiagrams(Path outputFolder) throws IOException, FontFormatException {
+        createDiagrams(outputFolder, true);
+    }
+
+    public void createDiagrams(Path outputFolder, boolean sizeNodes) throws IOException, FontFormatException {
         prepareOutputFolder(outputFolder);
 
         addLines(grid.backbone().lines);
         addDcLines(grid.backbone().hvdcLines);
 
         colorizeNodes();
-        sizeNodes();
+        if (sizeNodes) {
+            sizeNodes();
+        }
         colorizeEdges();
 
         layoutAndExport(Gephi.LayoutAlgorithm.ATLAS2, outputFolder, "backbone");
@@ -77,7 +83,9 @@ public class Viz {
         gephi.keepPositions();
         addLines(grid.subNetworks());
         colorizeNodes();
-        sizeNodes();
+        if (sizeNodes) {
+            sizeNodes();
+        }
         colorizeEdges();
         gephi.moveNewNodesCloseToLaidOutNeighbor();
 
@@ -106,9 +114,11 @@ public class Viz {
         System.out.println("   Partition by nominal voltage : " + partition.size() + " " + partition.getValues());
 
         for (Object v : partition.getValues()) {
-            double nominalVoltage = (Double)v;
+            double nominalVoltage = (Double) v;
             int kc = 0;
-            for (kc = 0; kc < acNominalVoltages.length && nominalVoltage >= acNominalVoltages[kc]; kc++);
+            while (kc < acNominalVoltages.length && nominalVoltage >= acNominalVoltages[kc]) {
+                kc++;
+            }
             partition.setColor(nominalVoltage, AC_NOMINAL_VOLTAGE_COLORS[kc - 1]);
         }
         gephi.appearanceController.transform(function);
