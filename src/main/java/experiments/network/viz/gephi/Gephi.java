@@ -130,10 +130,9 @@ public class Gephi {
             changed = false;
             withoutPosition = 0;
             for (Node node : graph.getNodes()) {
-                if (node.isFixed())
+                if (node.isFixed() || hasPosition(node)) {
                     continue;
-                if (hasPosition(node))
-                    continue;
+                }
                 debug("no position for " + node.getLabel());
                 withoutPosition++;
                 for (Node neighbor : graph.getNeighbors(node)) {
@@ -218,8 +217,9 @@ public class Gephi {
     }
 
     private void debug(String message) {
-        if (DEBUG)
+        if (DEBUG) {
             System.out.println(message);
+        }
     }
 
     private void info(String message) {

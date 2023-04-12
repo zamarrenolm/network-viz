@@ -29,6 +29,7 @@ public class Grid {
             this.lines = lines;
             this.hvdcLines = hvdcLines;
         }
+
         public final List<Line> lines;
         public final List<HvdcLine> hvdcLines;
     }
