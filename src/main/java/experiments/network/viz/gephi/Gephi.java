@@ -25,27 +25,36 @@ import org.gephi.project.api.Workspace;
 import org.openide.util.Lookup;
 
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 
 public class Gephi {
-    private static final int LAYOUT_MAX_ITERATIONS = 5000;
+    private static final int LAYOUT_MAX_ITERATIONS = 1000;
+    private static final float YIFANHU_OPTIMAL_DISTANCE = 40f;
+
     private static final boolean DEBUG = false;
+    private static final float DEFAULT_NODE_SIZE = 1.0f;
+    public static final float MIN_NODE_SIZE = 1.0f;
+    public static final float MAX_NODE_SIZE = 4.0f;
+    private static final float DEFAULT_EDGE_THICKNESS = 0.5f;
+    private static final float DEFAULT_NODE_BORDER_WIDTH = 0.2f;
+    private static final int FONT_SIZE = 8;
+
     public AppearanceController appearanceController;
     public AppearanceModel appearanceModel;
     public GraphModel model;
     public UndirectedGraph graph;
     private ProjectController projectController;
     private Workspace workspace;
+    private boolean useWeights = false;
 
     public Gephi() {
         init();
     }
 
-    private static Font createNodeLabelFont() throws IOException, FontFormatException {
-        return Font.createFont(Font.TRUETYPE_FONT, new File("/System/Library/Fonts/Helvetica.ttc")).deriveFont(12f);
+    private static Font getNodeLabelFont() throws IOException, FontFormatException {
+        //return Font.createFont(Font.TRUETYPE_FONT, new File("/System/Library/Fonts/Helvetica.ttc")).deriveFont(FONT_SIZE);
+        return new Font("Lucida Sans", Font.PLAIN, FONT_SIZE);
     }
 
     private static boolean hasPosition(Node node) {
@@ -72,7 +81,11 @@ public class Gephi {
         graph = model.getUndirectedGraph();
     }
 
-    public Node addNode(String id, String label, Consumer<Node> attributeCalculator) {
+    public void setUseWeights(boolean useWeights) {
+        this.useWeights = useWeights;
+    }
+
+    public Node addNode(String id, String label) {
         Node node = graph.getNode(id);
         if (node != null) {
             if (node.getLabel().equals(label)) {
@@ -83,17 +96,23 @@ public class Gephi {
         }
         node = model.factory().newNode(id);
         node.setLabel(label);
-        node.setSize(10);
+        node.setSize(DEFAULT_NODE_SIZE);
         graph.addNode(node);
-        attributeCalculator.accept(node);
+
         return node;
+    }
+
+    public Edge addEdge(String label, Node n0, Node n1) {
+        return addEdge(label, n0, n1, Double.NaN);
     }
 
     public Edge addEdge(String label, Node n0, Node n1, double weight) {
         boolean directed = false;
         Edge edge = model.factory().newEdge(n0, n1, directed);
         edge.setLabel(label);
-        edge.setWeight(weight);
+        if (Double.isFinite(weight) && useWeights) {
+            edge.setWeight(weight);
+        }
         graph.addEdge(edge);
         return edge;
     }
@@ -130,7 +149,10 @@ public class Gephi {
             changed = false;
             withoutPosition = 0;
             for (Node node : graph.getNodes()) {
-                if (node.isFixed() || hasPosition(node)) {
+                if (node.isFixed()) {
+                    continue;
+                }
+                if (hasPosition(node)) {
                     continue;
                 }
                 debug("no position for " + node.getLabel());
@@ -154,10 +176,10 @@ public class Gephi {
         Layout layout = null;
         switch (algorithm) {
             case YIFANHU:
-                YifanHuLayout yh = new YifanHuLayout(null, new StepDisplacement(1f));
+                YifanHuLayout yh = new YifanHuLayout(null, new StepDisplacement(10f));
                 yh.resetPropertiesValues();
-                yh.setOptimalDistance(200f);
-                yh.setConvergenceThreshold(1e-8f);
+                yh.setOptimalDistance(YIFANHU_OPTIMAL_DISTANCE);
+                yh.setConvergenceThreshold(1e-6f);
                 yh.setRelativeStrength(0.6f);
                 layout = yh;
                 break;
@@ -165,6 +187,8 @@ public class Gephi {
                 ForceAtlas2 fa2 = new ForceAtlas2(null);
                 fa2.resetPropertiesValues();
                 fa2.setBarnesHutOptimize(true);
+                fa2.setAdjustSizes(false);
+                fa2.setNormalizeEdgeWeights(true);
                 layout = fa2;
                 break;
             case ATLAS2_NO_WEIGHT:
@@ -177,7 +201,7 @@ public class Gephi {
             case EXPANSION:
                 // We could calculate the expansion factor based on the amount of nodes added in subNetworks
                 // relative to the nodes in the backbone
-                ExpandLayout ex = new ExpandLayout(null, 1.4);
+                ExpandLayout ex = new ExpandLayout(null, 3);
                 layout = ex;
                 break;
             case RANDOM:
@@ -203,15 +227,16 @@ public class Gephi {
         PreviewProperties prop = model.getProperties();
         prop.putValue(PreviewProperty.SHOW_NODE_LABELS, true);
         prop.putValue(PreviewProperty.NODE_LABEL_COLOR, new DependantOriginalColor(Color.LIGHT_GRAY));
-        prop.putValue(PreviewProperty.NODE_LABEL_FONT, createNodeLabelFont());
-        prop.putValue(PreviewProperty.NODE_LABEL_PROPORTIONAL_SIZE, false);
+        prop.putValue(PreviewProperty.NODE_LABEL_FONT, getNodeLabelFont());
+        prop.putValue(PreviewProperty.NODE_LABEL_PROPORTIONAL_SIZE, true);
+        prop.putValue(PreviewProperty.NODE_BORDER_WIDTH, DEFAULT_NODE_BORDER_WIDTH);
         prop.putValue(PreviewProperty.EDGE_COLOR, new EdgeColor(EdgeColor.Mode.ORIGINAL));
-        prop.putValue(PreviewProperty.EDGE_THICKNESS, 20);
+        prop.putValue(PreviewProperty.EDGE_THICKNESS, DEFAULT_EDGE_THICKNESS);
         prop.putValue(PreviewProperty.EDGE_CURVED, false);
 
         ExportController ec = Lookup.getDefault().lookup(ExportController.class);
         PDFExporter pdfExporter = (PDFExporter) ec.getExporter("pdf");
-        pdfExporter.setPageSize(PageSize.A0);
+        pdfExporter.setPageSize(PageSize.A4);
         pdfExporter.setLandscape(true);
         ec.exportFile(path.toFile(), pdfExporter);
     }
