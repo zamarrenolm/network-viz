@@ -191,6 +191,14 @@ public class Gephi {
                 fa2.setNormalizeEdgeWeights(true);
                 layout = fa2;
                 break;
+            case ATLAS2_TOQUETEAR:
+                ForceAtlas2Toquetear fa2i = new ForceAtlas2Toquetear(null);
+                fa2i.resetPropertiesValues();
+                fa2i.setBarnesHutOptimize(true);
+                fa2i.setAdjustSizes(false);
+                fa2i.setNormalizeEdgeWeights(true);
+                layout = fa2i;
+                break;
             case ATLAS2_NO_WEIGHT:
                 ForceAtlas2 fa2now = new ForceAtlas2(null);
                 fa2now.resetPropertiesValues();
@@ -252,6 +260,6 @@ public class Gephi {
     }
 
     public enum LayoutAlgorithm {
-        YIFANHU, ATLAS2, ATLAS2_NO_WEIGHT, EXPANSION, RANDOM;
+        YIFANHU, ATLAS2, ATLAS2_TOQUETEAR, ATLAS2_NO_WEIGHT, EXPANSION, RANDOM;
     }
 }

@@ -93,6 +93,11 @@ public final class VizRun {
                 inputs.voltageLevelFilterFactory.apply(inputs.network),
                 inputs.useWeights,
                 Viz.WeightInterpretation.WEIGHT_IS_ADMITTANCE)
+                .createDiagram(inputs.outputFolder, name1, Gephi.LayoutAlgorithm.ATLAS2_TOQUETEAR);
+        new Viz(inputs.network,
+                inputs.voltageLevelFilterFactory.apply(inputs.network),
+                inputs.useWeights,
+                Viz.WeightInterpretation.WEIGHT_IS_ADMITTANCE)
                 .createDiagram(inputs.outputFolder, name1, Gephi.LayoutAlgorithm.YIFANHU);
     }
 }
